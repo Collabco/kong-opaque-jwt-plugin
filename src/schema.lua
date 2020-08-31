@@ -5,8 +5,8 @@ local function validate_url(value)
     local parsed_url = url.parse(value)
     if parsed_url.scheme and parsed_url.host then
         parsed_url.scheme = parsed_url.scheme:lower()
-        if not (parsed_url.scheme == "https") then
-            return false, "Supported protocols are HTTPS"
+        if not (parsed_url.scheme == "https" or parsed_url.scheme == "http") then
+            return false, "Supported protocols are HTTP and HTTPS"
         end
     end
 

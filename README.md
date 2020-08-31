@@ -18,11 +18,11 @@ Tested with Kong >= 1.2.x (probably will work with older versions)
 
 `luarocks make` -  Will build the lua package and install
 
-`luarocks pack kong-opaque-jwt 1.0.0` - Will package the installed package for installation on another server/container.
+`luarocks pack kong-opaque-jwt 1.0-1` - Will package the installed package for installation on another server/container.
 
 ### Install
 
-1. Install plug-in using luarocks package - `luarocks install kong-opaque-jwt-1.0.0.all.rock` - install file specified i.e. kong-opaque-jwt-1.0.0.all.rock
+1. Install plug-in using luarocks package - `luarocks install kong-opaque-jwt-1.0-0.all.rock` - install file specified i.e. kong-opaque-jwt-1.0.0.all.rock
 2. Add to `kong.conf` configuration file plugins directive i.e. `plugins = bundled,kong-opaque-jwt`
 3. If necessary update `lua_package_path` e.g `lua_package_path = /usr/local/Cellar/openresty@1.15.8.3/1.15.8.3/luarocks/share/lua/5.1/?.lua;;` (default luarocks install path on a mac kong install)
 
