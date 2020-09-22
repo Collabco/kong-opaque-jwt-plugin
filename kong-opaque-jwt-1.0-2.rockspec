@@ -1,5 +1,5 @@
 package = "kong-opaque-jwt"
-version = "1.0-1"
+version = "1.0-2"
 source = {
    url = "git+https://github.com/Collabco/kong-opaque-jwt.git"
 }

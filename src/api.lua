@@ -29,7 +29,7 @@ local function get_plugin_client_ids()
 
     -- Let's not cache errors so invalidate
     if err then
-        kong.cache:invalidate(cache_id)
+        kong.cache:invalidate_local(cache_id)
     end
 
     return clientids, err 
@@ -51,7 +51,7 @@ return {
 
                     -- Enumerate clientids and invalidate the access tokens for each one
                     for _,clientid in ipairs(clientids) do
-                        kong.cache:invalidate("at:" .. access_token .. ":" .. clientid)
+                        kong.cache:invalidate_local("at:" .. access_token .. ":" .. clientid)
                     end
                     return { json = { status = "200", detail = "Token evicted from cache"} }
                 else

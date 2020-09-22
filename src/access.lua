@@ -53,7 +53,7 @@ local function introspect_access_token(access_token)
         end
         -- not 200 response status isn't valid for normal caching
         if res.status ~= 200 then
-            kong.cache:invalidate(cache_id)
+            kong.cache:invalidate_local(cache_id)
         end
 
         return res
