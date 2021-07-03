@@ -2,8 +2,8 @@ local resty_sha256 = require "resty.sha256"
 local str = require "resty.string"
 local pl_file = require "pl.file"
 local json = require "cjson"
-local openssl_digest = require "openssl.digest"
-local openssl_pkey = require "openssl.pkey"
+local openssl_digest = require "resty.openssl.digest"
+local openssl_pkey = require "resty.openssl.pkey"
 local table_concat = table.concat
 local encode_base64 = ngx.encode_base64
 local env_private_key_location = os.getenv("KONG_JWT_SIGNING_KEY")
@@ -95,7 +95,10 @@ local function encode_jwt_token(conf, payload, key)
     b64_encode(json.encode(payload))
   }
   local signing_input = table_concat(segments, ".")
-  local signature = openssl_pkey.new(key):sign(openssl_digest.new("sha256"):update(signing_input))
+  local d = openssl_digest.new("sha256")
+  local digest = d:final(signing_input)
+  local pkey = openssl_pkey.new(key)
+  local signature = pkey:sign(digest)
   segments[#segments+1] = b64_encode(signature)
   return table_concat(segments, ".")
 end

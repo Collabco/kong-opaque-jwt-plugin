@@ -18,7 +18,7 @@ Tested with Kong >= 1.2.x (probably will work with older versions)
 
 `luarocks make` -  Will build the lua package and install
 
-`luarocks pack kong-opaque-jwt 1.0-2` - Will package the installed package for installation on another server/container.
+`luarocks pack kong-opaque-jwt 1.0-5` - Will package the installed package for installation on another server/container.
 
 ### Install
 
