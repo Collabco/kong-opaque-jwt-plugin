@@ -100,6 +100,17 @@ local function is_bearer_access_token(token)
 end
 --
 
+--- Checks if table has a value
+local function has_value (tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
 --- Execute all plugin logic
 -- @param conf the configuration
 function _M.execute(conf)
@@ -170,21 +181,38 @@ function _M.execute(conf)
     ngx.req.set_header("Authorization", "Bearer " .. jwt_token)
     
     -- if auth signature header specific generate and set.
-    if conf.auth_signature_header_name then
+    if conf.auth_signature_header_name and conf.auth_signature_header_name ~= "" then
 
         local auth_sig = ""
+        local role = ""
+
+        -- get value of role claim
+        if conf.auth_signature_anonymous_role_claim then
+            role =  data[conf.auth_signature_anonymous_role_claim]
+        end
 
         -- concatenate claims with pipe as required
-        if conf.auth_signature_claim_1 and data[conf.auth_signature_claim_1] then
-            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_1]
+        if conf.auth_signature_tenant_claim and data[conf.auth_signature_tenant_claim] then
+            auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_tenant_claim]
         end
 
-        if conf.auth_signature_claim_2 and data[conf.auth_signature_claim_2] then
-            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_2]
-        end
+        -- If there is a user claim add it to the signature
+        if conf.auth_signature_user_claim and data[conf.auth_signature_user_claim] then
+            -- if anonymous user then substitue 'anon' value for the user
+                -- Handle multiple role claim values in table
+            if role and type(role) == "table" and has_value(role, conf.auth_signature_anonymous_role_value) then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. conf.auth_signature_anonymous_user_value
+                -- Handle single role value in a string
+            elseif role == conf.auth_signature_anonymous_role_value then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. conf.auth_signature_anonymous_user_value
+            else 
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_user_claim]
+            end
 
-        if conf.auth_signature_claim_3 and data[conf.auth_signature_claim_3] then
-            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_3]
+            -- If there is a session claim add it to the signature
+            if conf.auth_signature_session_claim and data[conf.auth_signature_session_claim] then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_session_claim]
+            end
         end
 
         -- set authentication signature response header for the request

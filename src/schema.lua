@@ -44,11 +44,14 @@ return {
                     { jwt_signing_public_key_location = { type = "string", required = false } },
                     { jwt_signing_token_ttl = { type = "number", required = true, default = 0 } },
                     { run_on_preflight = { type = "boolean", required = true, default = false } },
-                    { auth_signature_header_name = { type = "string", required = false } },
-                    { auth_signature_claim_1 = { type = "string", required = false, default = "tenant" } },
-                    { auth_signature_claim_2 = { type = "string", required = false, default = "sub" } },
-                    { auth_signature_claim_3 = { type = "string", required = false, default = "sid" } }
-
+                    { auth_signature_header_name = { type = "string", required = false, default = "mdpsig" } },
+                    { auth_signature_seperator = { type = "string", required = true, default = "|" } },
+                    { auth_signature_tenant_claim = { type = "string", required = true, default = "tenant" } },
+                    { auth_signature_user_claim = { type = "string", required = true, default = "sub" } },
+                    { auth_signature_session_claim = { type = "string", required = false, default = "myday_sid" } },
+                    { auth_signature_anonymous_role_claim = { type = "string", required = false, default = "role" } },
+                    { auth_signature_anonymous_role_value = { type = "string", required = true, default = "anonymous" } },
+                    { auth_signature_anonymous_user_value = { type = "string", required = true, default = "anon" } }
                 }
             }
         }

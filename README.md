@@ -47,9 +47,14 @@ Version 2.1 and above will not to work due to changes in the openssl lua library
 | `config.jwt_signing_token_ttl`  | yes | 0 | Override 'exp' attribute (token expiry time in seconds) provided by introspection endpoint if value is greater than '0' - the default.) |
 | `config.run_on_preflight`  | yes | false | If true then the plug-in will run on pre-flight (OPTIONS) requests. By default this is false as these aren't usually authenticated. |
 | `auth_signature_header_name` | no | | If set the an authentication signature header will be included named after the provided value in response. Consiting of upto 3 claims sperated by a pipe character. |
-| `auth_signature_claim_1` | yes | | Include first specified claim in the authentication signature. |
-| `auth_signature_claim_2` | no | | Include second specified claim in the authentication signature. |
-| `auth_signature_claim_3` | no | | Include third specified claim in the authentication signature. |
+| `auth_signature_seperator` | yes | '|' | Seperator used between signature components |
+| `auth_signature_tenant_claim` | yes | tenant | Include tenant, using specified claim, in the authentication signature. |
+| `auth_signature_user_claim` | yes | sub | Include user id, using specified claim, in the authentication signature. |
+| `auth_signature_session_claim` | no | myday_sid | Include session id, using specified claim, in the authentication signature. |
+| `auth_signature_anonymous_role_claim` | no | role | Role claim to check user has a role of  anonymous user |
+| `auth_signature_anonymous_role_value` | yes | anonymous | Role value to check user role claim has a value of |
+| `auth_signature_anonymous_user_value` | yes | anonymous | Value to be used in place of an anonymous users user claim. |
+
 
 ### JWT Signing certificates
 
