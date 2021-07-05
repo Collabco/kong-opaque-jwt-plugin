@@ -49,7 +49,7 @@ local function introspect_access_token(access_token)
         local res, err = kong.cache:get(cache_id, { ttl = _M.conf.introspection_result_cache_time },
             introspect_access_token_req, access_token)
         if err then
-            error_response("Unexpected error: " .. err, ngx.HTTP_INTERNAL_SERVER_ERROR)
+            return { status = 500 }
         end
         -- not 200 response status isn't valid for normal caching
         if res.status ~= 200 then
@@ -118,6 +118,7 @@ function _M.execute(conf)
             return
         else
             error_response("Authentication is required.", ngx.HTTP_UNAUTHORIZED)
+            return
         end 
     end
 
@@ -139,16 +140,24 @@ function _M.execute(conf)
     local res = introspect_access_token(access_token)
     if not res then
         error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
+        return
+    end
+    if res.status = 500 then
+        error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
+        return
     end
     if res.status ~= 200 then
         error_response("The resource owner or authorization server denied the request.", ngx.HTTP_UNAUTHORIZED)
+        return
     end
     local data = cjson.decode(res.body)
     if data["active"] ~= true then
         error_response("The resource owner or authorization server denied the request.", ngx.HTTP_UNAUTHORIZED)
+        return
     end
     if not is_scope_authorized(data["scope"]) then
         error_response("Forbidden", ngx.HTTP_FORBIDDEN)
+        return
     end
 
     -- clear opaque token header from request
