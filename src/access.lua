@@ -142,7 +142,7 @@ function _M.execute(conf)
         error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
     end
-    if res.status = 500 then
+    if res.status == 500 then
         error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
     end
@@ -168,6 +168,30 @@ function _M.execute(conf)
 
     -- set jwt token header in request
     ngx.req.set_header("Authorization", "Bearer " .. jwt_token)
+    
+    -- if auth signature header specific generate and set.
+    if conf.auth_signature_header_name then
+
+        local auth_sig = ""
+
+        -- concatenate claims with pipe as required
+        if conf.auth_signature_claim_1 and data[conf.auth_signature_claim_1] then
+            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_1]
+        end
+
+        if conf.auth_signature_claim_2 and data[conf.auth_signature_claim_2] then
+            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_2]
+        end
+
+        if conf.auth_signature_claim_3 and data[conf.auth_signature_claim_3] then
+            auth_sig = auth_sig .. (auth_sig ~= "" and "|" or "")  .. data[conf.auth_signature_claim_3]
+        end
+
+        -- set authentication signature response header for the request
+        kong.response.set_header(conf.auth_signature_header_name, auth_sig)
+
+    end
+
 end
 
 return _M

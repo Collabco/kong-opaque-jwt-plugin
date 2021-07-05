@@ -10,7 +10,8 @@ The signed JWT generated has a body containing the full payload of the introspec
 The kong server/docker image needs to have the signing certificate public key and private key to be able to create a signed JWT token. This signing certificate should be the same as used in the OAuth 2 authorization server.
 
 ## Supported Kong Releases
-Tested with Kong >= 1.2.x (probably will work with older versions)
+Tested with Kong 1.2.2 and 2.0.5 (probably will work with versions >= 1.0.0 and <= 2.0.5).
+Version 2.1 and above will not to work due to changes in the openssl lua library shipped with openresty.
 
 ## Build / Installation
 
@@ -18,7 +19,7 @@ Tested with Kong >= 1.2.x (probably will work with older versions)
 
 `luarocks make` -  Will build the lua package and install
 
-`luarocks pack kong-opaque-jwt 1.0-2` - Will package the installed package for installation on another server/container.
+`luarocks pack kong-opaque-jwt 1.1-0` - Will package the installed package for installation on another server/container.
 
 ### Install
 
@@ -45,6 +46,10 @@ Tested with Kong >= 1.2.x (probably will work with older versions)
 | `config.jwt_signing_public_key_location`  | no | | Location of public key .pem file on the filesystem. |
 | `config.jwt_signing_token_ttl`  | yes | 0 | Override 'exp' attribute (token expiry time in seconds) provided by introspection endpoint if value is greater than '0' - the default.) |
 | `config.run_on_preflight`  | yes | false | If true then the plug-in will run on pre-flight (OPTIONS) requests. By default this is false as these aren't usually authenticated. |
+| `auth_signature_header_name` | no | | If set the an authentication signature header will be included named after the provided value in response. Consiting of upto 3 claims sperated by a pipe character. |
+| `auth_signature_claim_1` | yes | | Include first specified claim in the authentication signature. |
+| `auth_signature_claim_2` | no | | Include second specified claim in the authentication signature. |
+| `auth_signature_claim_3` | no | | Include third specified claim in the authentication signature. |
 
 ### JWT Signing certificates
 
@@ -61,8 +66,10 @@ The location of these files can be specified using the following configuration a
 
 No integration tests yet but you can test manually with kong and echo-server and your authorization server...
 
+- Note 1.x versions of this plugin are only known to work upto kong 2.1.4!!!
 - Ensure you current directory is the root of this repos.
-- [Install kong](https://konghq.com/get-started/#install) e.g. on a mac terminal (you need hombrew) - `brew tap kong/kong && brew install kong`
+- [Install kong](https://konghq.com/get-started/#install) e.g. on a mac terminal (you need hombrew) - `brew tap kong/kong && brew install kong`.
+- IMPORTSNT - on a mac if you need an older version of kong (which you do for 1.x versions of this plugin) you need to clone the hombrew package repo (https://github.com/Kong/homebrew-kong.git). Make your working direct the root of the repos and then reset the repos to the commit of the older version (look at commit history) of kong you want e.g. `git reset --hard a19e7db094ef3d91ba29105e16e23ebcdf61702e` for 2.0.5 which is the last known version to work with the 1.x plugin. You need to then modify the Formula/kong.rb file with a text editor to replace the download url for the stable version e.g. `url "https://download.konghq.com/gateway-src/kong-2.0.5.tar.gz`. Then execute the command `brew install --build-from-source ./Formula/kong.rb` which will install the local package version. Unfortunately after installing the correct kong version brew will attempt to upgrade to the latest message you need to abort (ctrl + c) this as soon as you see the message telling you so which is after the patch stage.
 - Install the plugin - `luarocks make`
 - Modify the plugin configuration in test/kong.yml
 - Install echo server - `npm install -g http-echo-server` (requires npm and nodejs)
