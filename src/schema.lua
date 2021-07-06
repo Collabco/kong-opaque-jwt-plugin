@@ -44,7 +44,7 @@ return {
                     { jwt_signing_public_key_location = { type = "string", required = false } },
                     { jwt_signing_token_ttl = { type = "number", required = true, default = 0 } },
                     { run_on_preflight = { type = "boolean", required = true, default = false } },
-                    { auth_signature_header_name = { type = "string", required = false, default = "mdpsig" } },
+                    { auth_signature_header_name = { type = "string", required = false, default = "x-md-proxy-sig" } },
                     { auth_signature_seperator = { type = "string", required = true, default = "|" } },
                     { auth_signature_tenant_claim = { type = "string", required = true, default = "tenant" } },
                     { auth_signature_user_claim = { type = "string", required = true, default = "sub" } },
