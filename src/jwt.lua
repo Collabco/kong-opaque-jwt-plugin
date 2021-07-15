@@ -2,8 +2,8 @@ local resty_sha256 = require "resty.sha256"
 local str = require "resty.string"
 local pl_file = require "pl.file"
 local json = require "cjson"
-local openssl_digest = require "openssl.digest"
-local openssl_pkey = require "openssl.pkey"
+local openssl_digest = require "resty.openssl.digest"
+local openssl_pkey = require "resty.openssl.pkey"
 local table_concat = table.concat
 local encode_base64 = ngx.encode_base64
 local env_private_key_location = os.getenv("KONG_JWT_SIGNING_KEY")
@@ -95,25 +95,28 @@ local function encode_jwt_token(conf, payload, key)
     b64_encode(json.encode(payload))
   }
   local signing_input = table_concat(segments, ".")
-  local signature = openssl_pkey.new(key):sign(openssl_digest.new("sha256"):update(signing_input))
-  segments[#segments+1] = b64_encode(signature)
-  return table_concat(segments, ".")
-end
+  local digest, err1 = openssl_digest.new("sha256")
 
---- Build the payload hash
--- @return SHA-256 hash of the request body data
-local function build_payload_hash()
-  ngx.req.read_body()
-  local req_body  = ngx.req.get_body_data()
-  local payload_digest = ""
-  if req_body then
-    local sha256 = resty_sha256:new()
-    sha256:update(req_body)
-    payload_digest = sha256:final()
+  if err1 then
+    return err1
   end
-  return str.to_hex(payload_digest)
-end
 
+  digest:update(signing_input)
+  local pkey, err2 = openssl_pkey.new(key)
+
+  if err2 then
+    return err2
+  end
+
+  local signature, err3 = pkey:sign(digest)
+
+  if err3 then
+    return err3
+  end
+
+  segments[#segments+1] = b64_encode(signature)
+  return err3, table_concat(segments, ".")
+end
 
 --- Add the JWT header to the request
 -- @param conf the configuration
@@ -126,8 +129,8 @@ function _M.create_jwt(conf, payload)
   end
   payload.jti = utils.uuid() -- Set a uuid for the request
   local kong_private_key = get_kong_key("pkey", get_private_key_location(conf))
-  local jwt = encode_jwt_token(conf, payload, kong_private_key)
-  return jwt
+  local err, jwt = encode_jwt_token(conf, payload, kong_private_key)
+  return err, jwt
 end
 
 return _M
