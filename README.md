@@ -10,21 +10,21 @@ The signed JWT generated has a body containing the full payload of the introspec
 The kong server/docker image needs to have the signing certificate public key and private key to be able to create a signed JWT token. This signing certificate should be the same as used in the OAuth 2 authorization server.
 
 ## Supported Kong Releases
-Tested with Kong >= 1.2.x (probably will work with older versions)
+Tested with Kong 2.4.1 and 2.5.0 (probably will work with versions >= 2.1.0.0).
+Version 2.1 and above will not to work with older kong versions due to changes in the openssl lua library shipped with openresty.
 
 ## Build / Installation
 
 ### Build
 
 `luarocks make` -  Will build the lua package and install
-
-`luarocks pack kong-opaque-jwt 1.0-5` - Will package the installed package for installation on another server/container.
+`luarocks pack kong-opaque-jwt 2.1-0` - Will package the installed package for installation on another server/container.
 
 ### Install
 
-1. Install plug-in using luarocks package - `luarocks install kong-opaque-jwt-1.0-0.all.rock` - install file specified i.e. kong-opaque-jwt-1.0.0.all.rock
+1. Install plug-in using luarocks package - `luarocks install kong-opaque-jwt-2.1-0.all.rock` - install file specified i.e. kong-opaque-jwt-1.0.0.all.rock
 2. Add to `kong.conf` configuration file plugins directive i.e. `plugins = bundled,kong-opaque-jwt`
-3. If necessary update `lua_package_path` e.g `lua_package_path = /usr/local/Cellar/openresty@1.15.8.3/1.15.8.3/luarocks/share/lua/5.1/?.lua;;` (default luarocks install path on a mac kong install)
+3. If necessary update `lua_package_path` e.g `lua_package_path = /usr/local/Cellar/openresty@1.19.3.1/1.19.3.1/luarocks/share/lua/5.1/?.lua;;` (default luarocks install path on a mac kong install)
 
 ### Configuration
 
@@ -45,6 +45,15 @@ Tested with Kong >= 1.2.x (probably will work with older versions)
 | `config.jwt_signing_public_key_location`  | no | | Location of public key .pem file on the filesystem. |
 | `config.jwt_signing_token_ttl`  | yes | 0 | Override 'exp' attribute (token expiry time in seconds) provided by introspection endpoint if value is greater than '0' - the default.) |
 | `config.run_on_preflight`  | yes | false | If true then the plug-in will run on pre-flight (OPTIONS) requests. By default this is false as these aren't usually authenticated. |
+| `auth_signature_header_name` | no | | If set the an authentication signature header will be included named after the provided value in response. Consiting of upto 3 claims sperated by a pipe character. |
+| `auth_signature_seperator` | yes | '|' | Seperator used between signature components |
+| `auth_signature_tenant_claim` | yes | tenant | Include tenant, using specified claim, in the authentication signature. |
+| `auth_signature_user_claim` | yes | sub | Include user id, using specified claim, in the authentication signature. |
+| `auth_signature_session_claim` | no | myday_sid | Include session id, using specified claim, in the authentication signature. |
+| `auth_signature_anonymous_role_claim` | no | role | Role claim to check user has a role of  anonymous user |
+| `auth_signature_anonymous_role_value` | yes | anonymous | Role value to check user role claim has a value of |
+| `auth_signature_anonymous_user_value` | yes | anonymous | Value to be used in place of an anonymous users user claim. |
+
 
 ### JWT Signing certificates
 
@@ -61,8 +70,9 @@ The location of these files can be specified using the following configuration a
 
 No integration tests yet but you can test manually with kong and echo-server and your authorization server...
 
+- Note 2.x versions of this plugin are only known to work from kong 2.1 upwards.
 - Ensure you current directory is the root of this repos.
-- [Install kong](https://konghq.com/get-started/#install) e.g. on a mac terminal (you need hombrew) - `brew tap kong/kong && brew install kong`
+- [Install kong](https://konghq.com/get-started/#install) e.g. on a mac terminal (you need hombrew) - `brew tap kong/kong && brew install kong`.
 - Install the plugin - `luarocks make`
 - Modify the plugin configuration in test/kong.yml
 - Install echo server - `npm install -g http-echo-server` (requires npm and nodejs)

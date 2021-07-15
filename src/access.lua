@@ -49,7 +49,7 @@ local function introspect_access_token(access_token)
         local res, err = kong.cache:get(cache_id, { ttl = _M.conf.introspection_result_cache_time },
             introspect_access_token_req, access_token)
         if err then
-            error_response("Unexpected error: " .. err, ngx.HTTP_INTERNAL_SERVER_ERROR)
+            return { status = 500 }
         end
         -- not 200 response status isn't valid for normal caching
         if res.status ~= 200 then
@@ -100,6 +100,17 @@ local function is_bearer_access_token(token)
 end
 --
 
+--- Checks if table has a value
+local function has_value (tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
 --- Execute all plugin logic
 -- @param conf the configuration
 function _M.execute(conf)
@@ -118,6 +129,7 @@ function _M.execute(conf)
             return
         else
             error_response("Authentication is required.", ngx.HTTP_UNAUTHORIZED)
+            return
         end 
     end
 
@@ -139,16 +151,24 @@ function _M.execute(conf)
     local res = introspect_access_token(access_token)
     if not res then
         error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
+        return
+    end
+    if res.status == 500 then
+        error_response("Authorization server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
+        return
     end
     if res.status ~= 200 then
         error_response("The resource owner or authorization server denied the request.", ngx.HTTP_UNAUTHORIZED)
+        return
     end
     local data = cjson.decode(res.body)
     if data["active"] ~= true then
         error_response("The resource owner or authorization server denied the request.", ngx.HTTP_UNAUTHORIZED)
+        return
     end
     if not is_scope_authorized(data["scope"]) then
         error_response("Forbidden", ngx.HTTP_FORBIDDEN)
+        return
     end
 
     -- clear opaque token header from request
@@ -159,6 +179,47 @@ function _M.execute(conf)
 
     -- set jwt token header in request
     ngx.req.set_header("Authorization", "Bearer " .. jwt_token)
+    
+    -- if auth signature header specific generate and set.
+    if conf.auth_signature_header_name and conf.auth_signature_header_name ~= "" then
+
+        local auth_sig = ""
+        local role = ""
+
+        -- get value of role claim
+        if conf.auth_signature_anonymous_role_claim then
+            role =  data[conf.auth_signature_anonymous_role_claim]
+        end
+
+        -- concatenate claims with pipe as required
+        if conf.auth_signature_tenant_claim and data[conf.auth_signature_tenant_claim] then
+            auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_tenant_claim]
+        end
+
+        -- If there is a user claim add it to the signature
+        if conf.auth_signature_user_claim and data[conf.auth_signature_user_claim] then
+            -- if anonymous user then substitue 'anon' value for the user
+                -- Handle multiple role claim values in table
+            if role and type(role) == "table" and has_value(role, conf.auth_signature_anonymous_role_value) then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. conf.auth_signature_anonymous_user_value
+                -- Handle single role value in a string
+            elseif role == conf.auth_signature_anonymous_role_value then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. conf.auth_signature_anonymous_user_value
+            else 
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_user_claim]
+            end
+
+            -- If there is a session claim add it to the signature
+            if conf.auth_signature_session_claim and data[conf.auth_signature_session_claim] then
+                auth_sig = auth_sig .. (auth_sig ~= "" and conf.auth_signature_seperator or "")  .. data[conf.auth_signature_session_claim]
+            end
+        end
+
+        -- set authentication signature response header for the request
+        kong.response.set_header(conf.auth_signature_header_name, auth_sig)
+
+    end
+
 end
 
 return _M
