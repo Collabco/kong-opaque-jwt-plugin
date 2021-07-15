@@ -101,14 +101,14 @@ local function encode_jwt_token(conf, payload, key)
     return err1
   end
 
-  d:update(signing_input)
-  local pkey, err2 = openssl_pkey.new(digest)
+  digest:update(signing_input)
+  local pkey, err2 = openssl_pkey.new(key)
 
   if err2 then
     return err2
   end
 
-  local signature, err3 = pkey:sign(d)
+  local signature, err3 = pkey:sign(digest)
 
   if err3 then
     return err3
@@ -129,8 +129,8 @@ function _M.create_jwt(conf, payload)
   end
   payload.jti = utils.uuid() -- Set a uuid for the request
   local kong_private_key = get_kong_key("pkey", get_private_key_location(conf))
-  local jwt = encode_jwt_token(conf, payload, kong_private_key)
-  return jwt
+  local err, jwt = encode_jwt_token(conf, payload, kong_private_key)
+  return err, jwt
 end
 
 return _M
