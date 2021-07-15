@@ -95,28 +95,28 @@ local function encode_jwt_token(conf, payload, key)
     b64_encode(json.encode(payload))
   }
   local signing_input = table_concat(segments, ".")
-  local d = openssl_digest.new("sha256")
-  local digest = d:final(signing_input)
-  local pkey = openssl_pkey.new(key)
-  local signature = pkey:sign(digest)
-  segments[#segments+1] = b64_encode(signature)
-  return table_concat(segments, ".")
-end
+  local digest, err1 = openssl_digest.new("sha256")
 
---- Build the payload hash
--- @return SHA-256 hash of the request body data
-local function build_payload_hash()
-  ngx.req.read_body()
-  local req_body  = ngx.req.get_body_data()
-  local payload_digest = ""
-  if req_body then
-    local sha256 = resty_sha256:new()
-    sha256:update(req_body)
-    payload_digest = sha256:final()
+  if err1 then
+    return err1
   end
-  return str.to_hex(payload_digest)
-end
 
+  d:update(signing_input)
+  local pkey, err2 = openssl_pkey.new(digest)
+
+  if err2 then
+    return err2
+  end
+
+  local signature, err3 = pkey:sign(d)
+
+  if err3 then
+    return err3
+  end
+
+  segments[#segments+1] = b64_encode(signature)
+  return err3, table_concat(segments, ".")
+end
 
 --- Add the JWT header to the request
 -- @param conf the configuration

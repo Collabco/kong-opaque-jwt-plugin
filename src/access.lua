@@ -175,7 +175,12 @@ function _M.execute(conf)
     ngx.req.clear_header("Authorization")
 
     -- create jwt from introspection response payload
-    local jwt_token = jwt.create_jwt(conf, data)
+    local jwt_error, jwt_token = jwt.create_jwt(conf, data)
+
+    if jwt_error then
+        error_response("Gateway server error", ngx.HTTP_INTERNAL_SERVER_ERROR)
+        return
+    end
 
     -- set jwt token header in request
     ngx.req.set_header("Authorization", "Bearer " .. jwt_token)
