@@ -6,12 +6,7 @@ local TokenHandler = {
 local kong = kong
 local access = require "kong.plugins.kong-opaque-jwt.access"
 
-function TokenHandler:new()
-  TokenHandler.super.new(self, "kong-opaque-jwt")
-end
-
 function TokenHandler:access(config)
-  TokenHandler.super.access(self)
 
   access.execute(config)
 

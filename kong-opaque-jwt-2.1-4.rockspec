@@ -2,7 +2,7 @@ package = "kong-opaque-jwt"
 version = "2.1-4"
 source = {
    url = "git+https://github.com/Collabco/kong-opaque-jwt-plugin.git",
-   branch = "3.2.x"
+   branch = "3.2.x-test"
 }
 description = {
    summary = "A plugin for Kong which validates and replaces an opaque token with a newly signed JWT containing claims obtained through introspection.",
