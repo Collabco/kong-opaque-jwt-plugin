@@ -68,6 +68,40 @@ local function get_kong_key(key, location)
   return pkey
 end
 
+--- Create introspection request to fetch certificate from azure keyvault
+local function introspect_access_certificate_req()
+  local httpc = http:new()
+
+  -- Generate Authorization header value using client id and client secret
+  local auth_header = "Basic " .. ngx.encode_base64(_M.conf.introspection_client_id .. ":" .. _M.conf.introspection_client_secret)
+
+  -- GET {vaultBaseUrl}/certificates/{certificate-name}/{certificate-version}?api-version=7.4
+  -- if you don't specify the version, the latest is pull (which is what I want, latest - current)
+  -- how is the auth on the header meant to be ?
+  local url = "https://myday-azure-uksouth.vault.azure.net//certificates/identity-server-signing/pending?api-version=7.4"
+  local res, err = httpc:request_uri(url, {
+      method = "GET",
+      ssl_verify = false,
+      body = "token_type_hint=access_token&token=" .. access_token,
+      headers = { ["Content-Type"] = "application/x-www-form-urlencoded", ["Authorization"] = auth_header }
+  })
+
+  -- out fo the body returned 
+  -- we need field "kid" which is a long string
+  -- and the last substring which is the thumbprint :match('[^/]+$') to get the last word after /
+
+  local rescontent_table = json.decode(res.body) 
+  local thumbprint = rescontent_table["kid"]:match('[^/]+$')
+  if not res then
+      return { status = 0 }
+  end
+  if res.status ~= 200 then
+      return { status = res.status }
+  end
+  return thumbprint
+  
+end
+
 --- Base64 encode the JWT token
 -- @param payload the payload of the token
 -- @param key the key to sign the token with
@@ -78,8 +112,10 @@ local function encode_jwt_token(conf, payload, key)
     typ = "at+jwt"
   }
 
-  if conf.jwt_signing_kid then
-   header.kid = conf.jwt_signing_kid
+  if conf.jwt_signing_kid == nil then  -- if conf.kid is null --> fetch it from azure keyvault
+    header.kid = introspect_access_certificate_req().
+  else 
+    header.kid = conf.jwt_signing_kid
   end
 
   if conf.jwt_signing_x5t then
